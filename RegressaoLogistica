@@ -1,0 +1,242 @@
+###São 02 banco de dados: PACIENTES COM OUTRAS SINDROEMES REPIRATÓTIAS (CHAMAREMOS APENAS DE DIV) E PACIENTES COM COVID-19 (CHAMAREMOS DE DIVCOVID)
+
+##IMPORTAR DADOS
+#OUTRAS SÍNDROMES
+library(readxl)
+
+ DIV <- read_excel("C:/Users/Daniel/Desktop/TCC/DIV.xlsx", 
+     col_types = c("numeric", "text", "numeric", 
+         "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "numeric", 
+         "text", "text"))
+
+##IMPORTAR DADOS 
+#COVID-19
+
+ DIVCOVID <- read_excel("C:/Users/Daniel/Desktop/TCC/DIVCOVID.xlsx", 
+    col_types = c("numeric", "text", "numeric", 
+         "text", "text", "text", "text", "text", 
+         "text", "text", "text", "text", "text", 
+         "text", "text", "text", "text", "text", 
+       "text", "text", "text", "text", "numeric", 
+         "text", "text"))
+
+
+
+
+## Carregar os pacotes que serão usados
+# Carregar os pacotes que serão usados
+
+if(!require(pacman)) install.packages("pacman")
+library(pacman)
+
+pacman::p_load(dplyr, ggplot2, car, rstatix, lmtest, ggpubr, tidymodels)
+install.packages("baguette")
+install.packages("visdat")
+install.packages("inspectdf")
+install.packages("DataExplorer")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("ggplot2")
+install.packages("rsample")
+install.packages("Tidymodel")
+install.packages("workflowsets")
+
+library(tidyverse)    
+library(tidymodels)   
+library(baguette)     
+library(themis)    
+library(workflowsets) 
+library(patchwork)   
+library(visdat) 
+library(inspectdf) 
+library(DataExplorer)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(workflowsets)
+library(ggplot2)
+library(tidyr)
+library(DataExplorer)
+library(dplyr)
+library(rsample)
+
+
+doParallel::registerDoParallel()
+theme_set(theme_bw())
+
+### avaliação geral dos dados brutos
+#COVID-19
+DataExplorer::plot_intro(DIVCOVID, ggtheme = theme_bw(), 
+                         theme_config = list(legend.position = "bottom"))
+
+#OUTRAS SÍNDROMES
+DataExplorer::plot_intro(DIV, ggtheme = theme_bw(), 
+                         theme_config = list(legend.position = "bottom"))
+
+
+###MANIPULAÇÃO E ORGANIZAÇÃO DOS DADOS
+
+## Altera nome da coluna  
+#Outras síndromes 
+names(DIV)[names(DIV) == "CS_SEXO"] = "GENERO"
+names(DIV)[names(DIV) == "NU_IDADE_N"] = "IDADE"
+names(DIV)[names(DIV) == "CS_GESTANT"] = "GESTANTE"
+names(DIV)[names(DIV) == "DIAS"] = "DIAS_OBS"
+
+## Altera nome da coluna 
+#COVID-19 
+
+names(DIVCOVID)[names(DIVCOVID) == "CS_SEXO"] = "GENERO"
+names(DIVCOVID)[names(DIVCOVID) == "NU_IDADE_N"] = "IDADE"
+names(DIVCOVID)[names(DIVCOVID) == "CS_GESTANT"] = "GESTANTE"
+names(DIVCOVID)[names(DIVCOVID) == "DIAS"] = "DIAS_OBS"
+
+##omitir dados inválidos
+DIV <- na.omit(DIV)
+DIVCOVID <- na.omit(DIVCOVID)
+
+##EXCLUIR A PRIEMIRA COLUNA POIS ELA NÃO CONTEM DADOS RELEVANTES
+DIV<- DIV[-1]
+DIVCOVID<- DIVCOVID[-1]
+
+## SELECIONA APENAS OBSERVAÇÕES DE EVOLUÇÃO DOS PACIENTES 
+DIV <- filter(DIV, EVOLUCAO != "IGNORADO", EVOLUCAO != "NA")
+DIVCOVID <- filter(DIVCOVID, EVOLUCAO != "IGNORADO", EVOLUCAO != "NA")
+
+## Conversão das do formato da coluna de data.frame de caractere para fator 
+#OUTRAS SINDROMES
+DIV$GESTANTE <- as.factor(DIV$GESTANTE)
+DIV$PUERPERA <- as.factor(DIV$PUERPERA)
+DIV$FEBRE <- as.factor(DIV$FEBRE)
+DIV$TOSSE <- as.factor(DIV$TOSSE)
+DIV$GARGANTA <- as.factor(DIV$GARGANTA)
+DIV$DISPNEIA <- as.factor(DIV$DISPNEIA)
+DIV$DIARREIA <- as.factor(DIV$DIARREIA)
+DIV$VOMITO <- as.factor(DIV$VOMITO)
+DIV$HEMATOLOGI <- as.factor(DIV$HEMATOLOGI)
+DIV$SIND_DOWN <- as.factor(DIV$SIND_DOWN)
+DIV$HEPATICA <- as.factor(DIV$HEPATICA)
+DIV$HEPATICA <- as.factor(DIV$HEPATICA)
+DIV$ASMA <- as.factor(DIV$ASMA)
+DIV$DIABETES <- as.factor(DIV$DIABETES)
+DIV$NEUROLOGIC <- as.factor(DIV$NEUROLOGIC)
+DIV$PNEUMOPATI <- as.factor(DIV$PNEUMOPATI)
+DIV$IMUNODEPRE <- as.factor(DIV$IMUNODEPRE)
+DIV$RENAL <- as.factor(DIV$RENAL)
+DIV$EVOLUCAO <- as.factor(DIV$EVOLUCAO)
+DIV$COMORBIDADE <- as.factor(DIV$COMORBIDADE)
+DIV$SINTOMA <- as.factor(DIV$SINTOMA)
+
+## Conversão das do formato da coluna de data.frame de caractere para fator 
+#COVID-19	
+DIVCOVID$GESTANTE <- as.factor(DIVCOVID$GESTANTE)
+DIVCOVID$PUERPERA <- as.factor(DIVCOVID$PUERPERA)
+DIVCOVID$FEBRE <- as.factor(DIVCOVID$FEBRE)
+DIVCOVID$TOSSE <- as.factor(DIVCOVID$TOSSE)
+DIVCOVID$GARGANTA <- as.factor(DIVCOVID$GARGANTA)
+DIVCOVID$DISPNEIA <- as.factor(DIVCOVID$DISPNEIA)
+DIVCOVID$DIARREIA <- as.factor(DIVCOVID$DIARREIA)
+DIVCOVID$VOMITO <- as.factor(DIVCOVID$VOMITO)
+DIVCOVID$HEMATOLOGI <- as.factor(DIVCOVID$HEMATOLOGI)
+DIVCOVID$SIND_DOWN <- as.factor(DIVCOVID$SIND_DOWN)
+DIVCOVID$HEPATICA <- as.factor(DIVCOVID$HEPATICA)
+DIVCOVID$HEPATICA <- as.factor(DIVCOVID$HEPATICA)
+DIVCOVID$ASMA <- as.factor(DIVCOVID$ASMA)
+DIVCOVID$DIABETES <- as.factor(DIVCOVID$DIABETES)
+DIVCOVID$NEUROLOGIC <- as.factor(DIVCOVID$NEUROLOGIC)
+DIVCOVID$PNEUMOPATI <- as.factor(DIVCOVID$PNEUMOPATI)
+DIVCOVID$IMUNODEPRE <- as.factor(DIVCOVID$IMUNODEPRE)
+DIVCOVID$RENAL <- as.factor(DIVCOVID$RENAL)
+DIVCOVID$EVOLUCAO <- as.factor(DIVCOVID$EVOLUCAO)
+DIVCOVID$COMORBIDADE <- as.factor(DIVCOVID$COMORBIDADE)
+DIVCOVID$SINTOMA <- as.factor(DIVCOVID$SINTOMA)
+install.packages("kernlab", dependencies=TRUE)
+library("kernlab")
+library(caret);
+
+##SEPARAÇÃO DE DADOS
+#OUTRAS SÍNDROMES
+indice.treino = createDataPartition(y=DIV$EVOLUCAO, p=0.75, list=FALSE)
+treino = DIV[indice.treino, ]
+teste = DIV[-indice.treino, ]
+
+#COVID
+indice.treinoCOVID = createDataPartition(y=DIVCOVID$EVOLUCAO, p=0.75, list=FALSE)
+treinoCOVID = DIVCOVID[indice.treino, ]
+testeCOVID = DIVCOVID[-indice.treino, ]
+
+sapply(treino, function(x) sum(is.na(x)))
+sapply(treinoCOVID, function(x) sum(is.na(x)))
+
+
+###CRIAÇÃO DO MODELO
+#OUTRAS SINDROMES
+modeloDIV = glm (EVOLUCAO ~ COMORBIDADE+SINTOMA, data = treino, family = binomial)
+summary(modeloDIV)
+
+#COVID
+modeloCOVID = glm (EVOLUCAO ~ COMORBIDADE+SINTOMA, data = treinoCOVID, family = binomial)
+summary(modeloCOVID)
+
+##  Coeficientes da regressão
+#OUTRAS SINDROMES
+summary(modeloDIV)$coefficients
+#COVID
+summary(modeloCOVID)$coefficients
+
+
+##APLICAÇÃO DO MODELO NA BASE TESTE
+#OUTRAS SINDROMES
+pred.TesteDIV = predict(modeloDIV,teste, type = "response")
+Teste_v2DIV = cbind(teste,pred.TesteDIV)
+
+#COVID
+pred.TesteCOVID = predict(modeloCOVID,testeCOVID, type = "response")
+Teste_v2COVID = cbind(testeCOVID,pred.TesteCOVID)
+
+####verificar a qualidade do modelo
+library(ROCR)
+
+#OUTRAS SINDROMES
+pred.valDIV = prediction(pred.TesteDIV ,Teste_v2DIV$EVOLUCAO)
+
+#COVID
+pred.valCOVID = prediction(pred.TesteCOVID ,Teste_v2COVID$EVOLUCAO)
+
+## calculo da auc (area under the curve)
+#OUTRAS SINDROMES
+aucDIV = performance(pred.valDIV,"auc")
+#COVID
+aucCOVID = performance(pred.valCOVID,"auc")
+
+## Plota curva ROC
+#OUTRAS SINDROMES
+performanceDIV = performance(pred.valDIV, "tpr", "fpr")
+plot(performanceDIV, col = "blue", lwd = 5) +
+labs( title = "Gráfico 13: Curva ROC – base de pacientes com outras síndromes respiratórias
+")
+
+
+#COVID
+performanceCOVID = performance(pred.valCOVID, "tpr", "fpr")
+plot(performanceCOVID, col = "blue", lwd = 5)
+
+
+##Calculo Estatística KS
+#OUTRAS SINDROMES
+ksDIV <- max(attr(performanceDIV, "y.values")[[1]] - (attr(performanceDIV, "x.values")[[1]]))
+ksDIV
+#COVID
+ksCOVID <- max(attr(performanceCOVID, "y.values")[[1]] - (attr(performanceCOVID, "x.values")[[1]]))
+ksCOVID
+
+
+#confusion matrix
+#OUTRAS SINDROMES
+table(teste$EVOLUCAO, pred.TesteDIV > 0.5)
+#COVID
+table(testeCOVID$EVOLUCAO, pred.TesteCOVID > 0.5)
+
